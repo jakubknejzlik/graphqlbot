@@ -1,6 +1,11 @@
 {
   "dependencies": {
-    "botkit": "^0.6.7"
+    "bluebird": "^3.5.1",
+    "botkit": "^0.6.7",
+    "graphql": "^0.12.3",
+    "graphql-query-builder": "^1.0.7",
+    "inflection": "^1.12.0",
+    "request": "^2.83.0"
   },
   "scripts": {
     "start": "node index.js"
