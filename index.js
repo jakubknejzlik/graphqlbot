@@ -1,43 +1,18 @@
 const Botkit = require("botkit");
 
-const bot = require("./lib/bot");
+const GraphQLBot = require("./dist/GraphQLBot");
 
-const GRAPHQL_URL =
-  process.env.GRAPHQL_URL || "https://www.universe.com/graphql";
+const GRAPHQL_URL = process.env.GRAPHQL_URL;
 
-const start = async url => {
+const start = async (url, token) => {
   const controller = Botkit.slackbot({
-    // debug: true
+    // debug: true,
+    retry: Infinity
   });
 
-  await bot.initializeWithURL(controller, url);
+  const bot = new GraphQLBot.GraphQLBot(controller);
 
-  // give the bot something to listen for.
-  // controller.hears(
-  //   ".*",
-  //   ["direct_message", "direct_mention", "mention"],
-  //   (bot, message) => {
-  //     console.log(message);
-  //     bot.reply(message, `Hello yourself. ${message.text}`);
-  //   }
-  // );
-
-  // controller.hears(["hello", "hi"], ["direct_message"], (bot, message) => {
-  //   bot.startConversation(message, function(err, convo) {
-  //     convo.addQuestion("How are you?", function(response, convo) {
-  //       convo.say("Cool, you said: " + response.text);
-  //       convo.addQuestion("Anything else?2", (response, convo) => {
-  //         convo.say("bye2");
-  //         convo.next();
-  //       });
-  //       convo.next();
-  //     });
-  //     convo.addQuestion("Anything else?", (response, convo) => {
-  //       convo.say("bye");
-  //       convo.next();
-  //     });
-  //   });
-  // });
+  await bot.initializeWithURL(url);
 
   controller
     .spawn({
