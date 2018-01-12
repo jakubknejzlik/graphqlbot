@@ -1,7 +1,7 @@
-import { Topic } from "./Topic";
-import { TopicInteraction } from "./TopicInteraction";
-import { GraphQLSchema } from "graphql/type/schema";
-import { Message } from "botkit";
+import { Message } from 'botkit';
+import { GraphQLSchema } from 'graphql/type/schema';
+import { Topic } from './Topic';
+import { TopicInteraction } from './TopicInteraction';
 export declare class GraphqlTopic extends Topic {
     url: string;
     schema: GraphQLSchema | null;

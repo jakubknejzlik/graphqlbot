@@ -8,15 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const inflection = require("inflection");
-const request = require("request");
 const bluebird = require("bluebird");
+const graphql_1 = require("graphql");
+const scalars_1 = require("graphql/type/scalars");
+const buildClientSchema_1 = require("graphql/utilities/buildClientSchema");
+const inflection = require("inflection");
+const js_yaml_1 = require("js-yaml");
+const request = require("request");
+const GraphQLQuery_1 = require("../GraphQLQuery");
 const Topic_1 = require("./Topic");
 const TopicInteraction_1 = require("./TopicInteraction");
-const graphql_1 = require("graphql");
-const buildClientSchema_1 = require("graphql/utilities/buildClientSchema");
-const GraphQLQuery_1 = require("../GraphQLQuery");
-const js_yaml_1 = require("js-yaml");
 const postAsync = bluebird.promisify(request.post);
 // const graphql = require("graphql");
 // const Query = require("graphql-query-builder");
@@ -100,7 +101,7 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
                 return `\`${queryName}\` not found`;
             }
             let namedType = graphql_1.getNamedType(field.type);
-            if (_fields.length === 0) {
+            if (_fields.length === 0 && namedType instanceof graphql_1.GraphQLObjectType) {
                 _fields = this.getScalarFields(namedType);
             }
             let args = yield this.getArguments(convo, field.args, type);
@@ -142,8 +143,7 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             let _params = {};
             if (params === null && type == 'mutation') {
                 for (let arg of args) {
-                    let namedType = graphql_1.getNamedType(arg.type);
-                    let value = yield this.askForType(convo, namedType, arg.name);
+                    let value = yield this.askForField(convo, arg, "");
                     if (value) {
                         _params[arg.name] = value;
                     }
@@ -152,11 +152,12 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             return _params;
         });
     }
-    askForType(convo, type, name) {
+    askForField(convo, field, parentName) {
         return __awaiter(this, void 0, void 0, function* () {
             //   https://api.slack.com/docs/interactive-message-field-guide
-            if (type instanceof graphql_1.GraphQLScalarType) {
-                return yield this.askForScalarType(convo, type, name);
+            let type = graphql_1.getNamedType(field.type);
+            if (type instanceof graphql_1.GraphQLScalarType || type instanceof graphql_1.GraphQLEnumType) {
+                return yield this.askForScalarType(convo, type, `${parentName}${field.name}`, `${field.description}`);
             }
             else if (type instanceof graphql_1.GraphQLObjectType ||
                 type instanceof graphql_1.GraphQLInputObjectType) {
@@ -164,17 +165,28 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
                 let fields = type.getFields();
                 for (let key in fields) {
                     // key = key as string
-                    let field = fields[key];
-                    values[key] = yield this.askForType(convo, graphql_1.getNamedType(field.type), field.name);
+                    let subfield = fields[key];
+                    values[key] = yield this.askForField(convo, subfield, `${parentName}${field.name}.`);
                 }
                 return values;
             }
         });
     }
-    askForScalarType(convo, type, name) {
+    askForScalarType(convo, type, name, description = null) {
         return __awaiter(this, void 0, void 0, function* () {
+            let descriptionArray = [];
+            if (description) {
+                descriptionArray.push(description);
+            }
+            if (type instanceof graphql_1.GraphQLEnumType) {
+                let possibleValues = type.getValues().map(x => `${x.name}=>${x.value}`).join(', ');
+                descriptionArray.push(`possible values: ${possibleValues}`);
+            }
+            else if (type === scalars_1.GraphQLBoolean) {
+                descriptionArray.push(`possible values: true/false`);
+            }
             return new Promise((resolve, reject) => {
-                convo.ask(`Please provide value ${name}:`, (response, convo) => {
+                convo.ask(`Please provide value ${name} (${descriptionArray.join(';')}):`, (response, convo) => {
                     convo.next();
                     resolve(type.parseValue(response.text));
                 });
@@ -183,7 +195,6 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
     }
     buildQuery(name, type, args, fields) {
         let q = new GraphQLQuery_1.GraphQlQuery(name, args);
-        console.log(fields);
         q.select.apply(q, fields);
         return q;
     }

@@ -1,15 +1,26 @@
-import * as inflection from 'inflection'
-import * as request from 'request'
-import * as bluebird from 'bluebird'
-import { Topic } from "./Topic";
-import { TopicInteraction, TopicInteractionResponse, TopicInteractionQuestionResponse } from "./TopicInteraction";
-import { introspectionQuery, GraphQLObjectType, GraphQLField, GraphQLNamedType, getNamedType, GraphQLScalarType, GraphQLType, GraphQLArgument, GraphQLInputObjectType } from 'graphql'
-import { buildClientSchema } from "graphql/utilities/buildClientSchema";
-import { GraphQLSchema } from "graphql/type/schema";
-import { Message, Conversation } from "botkit";
-import { graphql } from 'graphql/graphql';
+import * as bluebird from 'bluebird';
+import { Conversation, Message } from 'botkit';
+import {
+    getNamedType,
+    GraphQLArgument,
+    GraphQLEnumType,
+    GraphQLField,
+    GraphQLInputField,
+    GraphQLInputObjectType,
+    GraphQLObjectType,
+    GraphQLScalarType,
+    introspectionQuery,
+} from 'graphql';
+import { GraphQLBoolean } from 'graphql/type/scalars';
+import { GraphQLSchema } from 'graphql/type/schema';
+import { buildClientSchema } from 'graphql/utilities/buildClientSchema';
+import * as inflection from 'inflection';
+import { safeDump } from 'js-yaml';
+import * as request from 'request';
+
 import { GraphQlQuery, IArgumentsMap } from '../GraphQLQuery';
-import { YAMLException, safeDump } from 'js-yaml';
+import { Topic } from './Topic';
+import { TopicInteraction, TopicInteractionQuestionResponse, TopicInteractionResponse } from './TopicInteraction';
 
 const postAsync = bluebird.promisify(request.post)
 
@@ -116,8 +127,7 @@ class GraphqlTopicInteraction extends TopicInteraction {
     }
 
     let namedType = getNamedType(field.type) as GraphQLObjectType
-    
-    if (_fields.length === 0) {
+    if (_fields.length === 0 && namedType instanceof GraphQLObjectType) {
       _fields = this.getScalarFields(namedType)
     }
     let args = await this.getArguments(convo, field.args, type)
@@ -160,8 +170,7 @@ class GraphqlTopicInteraction extends TopicInteraction {
     let _params: IArgumentsMap = {}
     if (params === null &&  type == 'mutation') {
       for(let arg of args) {
-        let namedType = getNamedType(arg.type)
-        let value = await this.askForType(convo, namedType, arg.name)
+        let value = await this.askForField(convo, arg, "")
         if (value) {
           _params[arg.name] = value
         }
@@ -170,10 +179,11 @@ class GraphqlTopicInteraction extends TopicInteraction {
     return _params;
   }
 
-   async askForType(convo: Conversation<Message>, type: GraphQLNamedType, name: string): Promise<string | number | boolean | Object> {
+  async askForField(convo: Conversation<Message>, field: GraphQLField<any, any> | GraphQLInputField, parentName: string): Promise<string | number | boolean | Object> {
     //   https://api.slack.com/docs/interactive-message-field-guide
-    if (type instanceof GraphQLScalarType) {
-      return await this.askForScalarType(convo, type, name);
+    let type = getNamedType(field.type)
+    if (type instanceof GraphQLScalarType || type instanceof GraphQLEnumType) {
+      return await this.askForScalarType(convo, type, `${parentName}${field.name}`,`${field.description}`);
     } else if (
       type instanceof GraphQLObjectType ||
       type instanceof GraphQLInputObjectType
@@ -182,16 +192,27 @@ class GraphqlTopicInteraction extends TopicInteraction {
       let fields = type.getFields();
       for (let key in fields) {
         // key = key as string
-        let field = fields[key];
-        
-        values[key] = await this.askForType(convo, getNamedType(field.type), field.name);
+        let subfield = fields[key];
+        values[key] = await this.askForField(convo, subfield, `${parentName}${field.name}.`);
       }
       return values;
     }
   }
-  async askForScalarType(convo: Conversation<Message>, type: GraphQLScalarType, name: string) {
+  async askForScalarType(convo: Conversation<Message>, type: GraphQLScalarType | GraphQLEnumType, name: string, description: string | null = null) {
+    let descriptionArray: string[] = []
+    if (description) {
+      descriptionArray.push(description)
+    }
+    
+    if (type instanceof GraphQLEnumType) {
+      let possibleValues = type.getValues().map(x => `${x.name}=>${x.value}`).join(', ')
+      descriptionArray.push(`possible values: ${possibleValues}`)
+    } else if (type === GraphQLBoolean) {
+      descriptionArray.push(`possible values: true/false`)
+    }
+    
     return new Promise((resolve, reject) => {
-      convo.ask(`Please provide value ${name}:`, (response, convo) => {
+      convo.ask(`Please provide value ${name} (${descriptionArray.join(';')}):`, (response, convo) => {
         convo.next();
         resolve(type.parseValue(response.text));
       });
@@ -200,7 +221,6 @@ class GraphqlTopicInteraction extends TopicInteraction {
 
   buildQuery(name: string, type: GraphQLObjectType, args: IArgumentsMap, fields: string[]): GraphQlQuery {
     let q = new GraphQlQuery(name, args)
-    console.log(fields)
     q.select.apply(q, fields);
     return q
   }

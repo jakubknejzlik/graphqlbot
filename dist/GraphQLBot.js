@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const GraphQLBotConversation_1 = require("./GraphQLBotConversation");
-const TopicResolver_1 = require("./TopicResolver");
 const GraphQLTopic_1 = require("./model/GraphQLTopic");
+const TopicResolver_1 = require("./TopicResolver");
 // const Conversation = require("./Conversation");
 // const GraphqlClient = require("./graphql-client");
 // const { NotFoundTopic, HelpTopic } = require("./model");
@@ -29,7 +29,10 @@ class GraphQLBot {
             // await help.assignToController(controller);
             // let notfound = new NotFoundTopic();
             // await notfound.assignToController(controller);
-            this.controller.hears([".*"], ["direct_message"], (bot, message) => __awaiter(this, void 0, void 0, function* () {
+            // this.controller.hears(['attach'],['direct_message'],function(bot,message) {
+            //   console.log('file',message)
+            // })
+            this.controller.hears([".*"], ['direct_message', 'direct_mention'], (bot, message) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     const resolver = new TopicResolver_1.TopicResolver([new GraphQLTopic_1.GraphqlTopic(url)]);
                     const conversation = new GraphQLBotConversation_1.GraphQLBotConversation(bot, resolver);

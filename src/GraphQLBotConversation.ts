@@ -1,9 +1,7 @@
 // import ConversationResolver from "./Conversation.Resolver";
-import { Bot, Message, Conversation } from "botkit";
-import { Topic } from "./model/Topic";
-import { TopicInteraction } from "./model/TopicInteraction";
-import { TopicResolver } from "./TopicResolver";
-import { start } from "repl";
+import { Bot, Conversation, Message } from 'botkit';
+
+import { TopicResolver } from './TopicResolver';
 
 export class GraphQLBotConversation<S,M extends Message> {
 

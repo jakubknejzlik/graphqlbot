@@ -1,8 +1,8 @@
-import { Controller, Bot } from "botkit";
-import { GraphQLBotConversation } from "./GraphQLBotConversation";
-import { TopicResolver } from "./TopicResolver";
-import { Topic } from "./model/Topic";
-import { GraphqlTopic } from "./model/GraphQLTopic";
+import { Bot, Controller } from 'botkit';
+
+import { GraphQLBotConversation } from './GraphQLBotConversation';
+import { GraphqlTopic } from './model/GraphQLTopic';
+import { TopicResolver } from './TopicResolver';
 
 // const Conversation = require("./Conversation");
 // const GraphqlClient = require("./graphql-client");
@@ -30,10 +30,13 @@ export class GraphQLBot<S,M> {
 
     // let notfound = new NotFoundTopic();
     // await notfound.assignToController(controller);
+    // this.controller.hears(['attach'],['direct_message'],function(bot,message) {
+    //   console.log('file',message)
+    // })
 
     this.controller.hears(
       [".*"],
-      ["direct_message"],
+      ['direct_message','direct_mention'],
       async (bot, message) => {
         try {
           const resolver = new TopicResolver([new GraphqlTopic(url)])
