@@ -21,7 +21,7 @@ class NotFoundTopic extends Topic_1.Topic {
     }
     getInteractionForMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new TopicInteraction_1.TopicInteraction(message.text, `I don't understand this, sorry. You can always write \`help\` for getting list of available actions.`);
+            return new TopicInteraction_1.TopicInteraction(message, `I don't understand this, sorry. You can always write \`help\` for getting list of available actions.`);
         });
     }
 }

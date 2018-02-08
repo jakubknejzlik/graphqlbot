@@ -24,7 +24,7 @@ class HelpTopic extends Topic_1.Topic {
             for (let topic of this.topics) {
                 commands = commands.concat(yield topic.getCommands());
             }
-            return new TopicInteraction_1.TopicInteraction(message.text, `Available actions: \`\`\`${commands.join("\n")}\`\`\` *Help:* \n${helpText}`);
+            return new TopicInteraction_1.TopicInteraction(message, `Available actions: \`\`\`${commands.join("\n")}\`\`\` *Help:* \n${helpText}`);
         });
     }
 }

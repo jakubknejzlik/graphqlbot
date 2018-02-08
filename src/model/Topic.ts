@@ -39,6 +39,6 @@ export class Topic {
   public async getInteractionForMessage(
     message: Message
   ): Promise<TopicInteraction> {
-    return new TopicInteraction(`Not implemented`);
+    return new TopicInteraction({ text: `Not implemented` });
   }
 }

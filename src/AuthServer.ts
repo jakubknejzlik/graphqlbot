@@ -23,17 +23,19 @@ export class AuthServer {
   constructor() {
     this.app = express();
 
-    const credentials = {
-      client: {
-        id: OAUTH_CLIENT_ID,
-        secret: OAUTH_CLIENT_SECRET
-      },
-      auth: {
-        tokenHost: OAUTH_AUTH_URL
-      }
-    };
+    if (OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET) {
+      const credentials = {
+        client: {
+          id: OAUTH_CLIENT_ID,
+          secret: OAUTH_CLIENT_SECRET
+        },
+        auth: {
+          tokenHost: OAUTH_AUTH_URL
+        }
+      };
 
-    this.oauth2 = createOAuth2(credentials);
+      this.oauth2 = createOAuth2(credentials);
+    }
   }
 
   start(port: number) {
@@ -59,6 +61,7 @@ export class AuthServer {
   }
 
   getRedirectUrl(): string {
+    if (!this.oauth2) throw new Error("Authorization is not enabled.");
     let state = uuidv4();
     return this.oauth2.authorizationCode.authorizeURL({
       redirect_uri: OAUTH_REDIRECT_URL,

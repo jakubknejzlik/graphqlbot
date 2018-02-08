@@ -23,7 +23,7 @@ export class HelpTopic extends Topic {
     }
 
     return new TopicInteraction(
-      message.text,
+      message,
       `Available actions: \`\`\`${commands.join(
         "\n"
       )}\`\`\` *Help:* \n${helpText}`

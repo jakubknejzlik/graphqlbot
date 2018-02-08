@@ -14,6 +14,6 @@ export class GreetingsTopic extends Topic {
   public async getInteractionForMessage(
     message: Message
   ): Promise<TopicInteraction> {
-    return new TopicInteraction(message.text, `Hello!`);
+    return new TopicInteraction(message, `Hello!`);
   }
 }

@@ -21,7 +21,7 @@ class GreetingsTopic extends Topic_1.Topic {
     }
     getInteractionForMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new TopicInteraction_1.TopicInteraction(message.text, `Hello!`);
+            return new TopicInteraction_1.TopicInteraction(message, `Hello!`);
         });
     }
 }

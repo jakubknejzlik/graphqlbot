@@ -43,7 +43,7 @@ class Topic {
     }
     getInteractionForMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new TopicInteraction_1.TopicInteraction(`Not implemented`);
+            return new TopicInteraction_1.TopicInteraction({ text: `Not implemented` });
         });
     }
 }

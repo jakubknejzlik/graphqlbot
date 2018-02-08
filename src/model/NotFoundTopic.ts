@@ -15,7 +15,7 @@ export class NotFoundTopic extends Topic {
     message: Message
   ): Promise<TopicInteraction> {
     return new TopicInteraction(
-      message.text,
+      message,
       `I don't understand this, sorry. You can always write \`help\` for getting list of available actions.`
     );
   }
