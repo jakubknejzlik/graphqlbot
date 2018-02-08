@@ -24,5 +24,5 @@ const start = async (url, token) => {
 
 start(GRAPHQL_URL);
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 80;
 sharedServer.start(port);
