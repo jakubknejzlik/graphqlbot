@@ -148,8 +148,9 @@ class GraphqlTopicInteraction extends TopicInteraction {
 
     let q = this.buildQuery(queryName, namedType, args, _fields);
     let result = await this.sendQuery(`${type} ${q.toString()}`);
+
     let resultYaml = safeDump(
-      result.data[queryName] ? result.data[queryName] : result
+      (result.data && result.data[queryName]) || result
     );
 
     return new GraphQLTopicInteractionResponse(

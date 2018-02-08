@@ -2,7 +2,7 @@
 import * as express from "express";
 import { OAuthClient } from "simple-oauth2";
 export interface AuthServerResponseHandler {
-    (token: string): void;
+    (err: Error, token: string): void;
 }
 export declare class AuthServer {
     app: express.Express;

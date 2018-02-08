@@ -12,7 +12,7 @@ const OAUTH_REDIRECT_URL = process.env.OAUTH_REDIRECT_URL;
 const OAUTH_SCOPE = process.env.OAUTH_SCOPE;
 
 export interface AuthServerResponseHandler {
-  (token: string): void;
+  (err: Error, token: string): void;
 }
 
 export class AuthServer {
@@ -53,10 +53,27 @@ export class AuthServer {
         next: express.NextFunction
       ) => {
         let state = req.query.state;
-        let token = req.query.code;
+        let code = req.query.code;
         if (typeof this.handlers[state] == "function") {
-          this.handlers[state](token);
-          res.send("Authorization processed, you can now close the window.");
+          const tokenConfig = {
+            code: code,
+            redirect_uri: OAUTH_REDIRECT_URL
+          };
+
+          this.oauth2.authorizationCode.getToken(
+            tokenConfig,
+            (error, result) => {
+              if (error) {
+                return this.handlers[state](error, null);
+              }
+
+              const access = this.oauth2.accessToken.create(result);
+              this.handlers[state](null, result.access_token);
+              res.send(
+                "Authorization processed, you can now close the window."
+              );
+            }
+          );
         } else {
           res.send("Handler not found");
         }
@@ -78,7 +95,10 @@ export class AuthServer {
     let qs = querystring.parse(url.parse(redirectUrl).query.toString());
     let state = qs.state as string;
     return new Promise<string>((resolve, reject) => {
-      this.handlers[state] = resolve;
+      this.handlers[state] = (err, token) => {
+        if (err) return reject(err);
+        resolve(token);
+      };
     });
   }
 }

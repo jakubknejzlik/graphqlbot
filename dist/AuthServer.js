@@ -46,10 +46,20 @@ class AuthServer {
         });
         this.app.use((req, res, next) => {
             let state = req.query.state;
-            let token = req.query.code;
+            let code = req.query.code;
             if (typeof this.handlers[state] == "function") {
-                this.handlers[state](token);
-                res.send("Authorization processed, you can now close the window.");
+                const tokenConfig = {
+                    code: code,
+                    redirect_uri: OAUTH_REDIRECT_URL
+                };
+                this.oauth2.authorizationCode.getToken(tokenConfig, (error, result) => {
+                    if (error) {
+                        return this.handlers[state](error, null);
+                    }
+                    const access = this.oauth2.accessToken.create(result);
+                    this.handlers[state](null, result.access_token);
+                    res.send("Authorization processed, you can now close the window.");
+                });
             }
             else {
                 res.send("Handler not found");
@@ -71,7 +81,11 @@ class AuthServer {
             let qs = querystring.parse(url.parse(redirectUrl).query.toString());
             let state = qs.state;
             return new Promise((resolve, reject) => {
-                this.handlers[state] = resolve;
+                this.handlers[state] = (err, token) => {
+                    if (err)
+                        return reject(err);
+                    resolve(token);
+                };
             });
         });
     }
