@@ -18,22 +18,11 @@ class GraphQLBotConversation {
             const convo = yield this.startConversation(message);
             try {
                 const topic = yield this.resolver.getTopicForMessage(message);
-                let interaction = yield topic.getInteractionForMessage(message);
-                let response = yield interaction.apply(convo);
-                if (response !== null) {
-                    convo.say(response.toString());
-                }
+                topic.startInteraction(message, convo);
             }
             catch (err) {
                 convo.say(`Failed to get response \`\`\`${err.message} ${err.stack}\`\`\``);
             }
-            // let anythingElseInteraction = new TopicInteraction("Anything else?")
-            // const res = await anythingElseInteraction.apply(convo)
-            // if (res == "yes") {
-            //   convo.transitionTo("completed","Ask again")
-            // }else {
-            // convo.addMessage("Good bye!","completed")
-            // }
         });
     }
     startConversation(message) {

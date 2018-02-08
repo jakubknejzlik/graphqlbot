@@ -1,6 +1,5 @@
 import * as inflection from "inflection";
 import { Message, Conversation } from "botkit";
-import { TopicInteraction } from "./TopicInteraction";
 
 export class Topic {
   name: string;
@@ -36,9 +35,10 @@ export class Topic {
     return null;
   }
 
-  public async getInteractionForMessage(
-    message: Message
-  ): Promise<TopicInteraction> {
-    return new TopicInteraction({ text: `Not implemented` });
+  public async startInteraction(
+    message: Message,
+    convo: Conversation<Message>
+  ): Promise<void> {
+    convo.say({ text: `Not implemented` });
   }
 }

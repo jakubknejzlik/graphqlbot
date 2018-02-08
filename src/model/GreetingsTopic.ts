@@ -1,6 +1,5 @@
 import { Topic } from "./Topic";
-import { TopicInteraction } from "./TopicInteraction";
-import { Message } from "botkit";
+import { Message, Conversation } from "botkit";
 
 export class GreetingsTopic extends Topic {
   constructor() {
@@ -11,9 +10,10 @@ export class GreetingsTopic extends Topic {
     return ["hi", "hello", "ciao", "greetings"];
   }
 
-  public async getInteractionForMessage(
-    message: Message
-  ): Promise<TopicInteraction> {
-    return new TopicInteraction(message, `Hello!`);
+  public async startInteraction(
+    message: Message,
+    convo: Conversation<Message>
+  ): Promise<void> {
+    convo.say(`Hello!`);
   }
 }

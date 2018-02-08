@@ -18,11 +18,17 @@ const request = require("request");
 const node_ts_cache_1 = require("node-ts-cache");
 const GraphQLQuery_1 = require("../GraphQLQuery");
 const Topic_1 = require("./Topic");
-const TopicInteraction_1 = require("./TopicInteraction");
 const AuthServer_1 = require("../AuthServer");
 const postAsync = bluebird.promisify(request.post);
 const accessTokenCache = new node_ts_cache_1.ExpirationStrategy(new node_ts_cache_1.MemoryStorage());
 const schemaCache = new node_ts_cache_1.ExpirationStrategy(new node_ts_cache_1.MemoryStorage());
+const delay = (interval = 1000) => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve();
+        }, interval);
+    });
+};
 class GraphqlTopic extends Topic_1.Topic {
     constructor(url) {
         super("GraphQL", "...");
@@ -67,30 +73,16 @@ class GraphqlTopic extends Topic_1.Topic {
             return this.getCommands();
         });
     }
-    getInteractionForMessage(message) {
+    startInteraction(message, convo) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new GraphqlTopicInteraction(message, yield this.fetchSchema(), this.url);
-        });
-    }
-}
-exports.GraphqlTopic = GraphqlTopic;
-class GraphQLTopicInteractionResponse extends TopicInteraction_1.TopicInteractionQuestionResponse {
-}
-class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
-    constructor(message, schema, url) {
-        super(message);
-        this.schema = schema;
-        this.url = url;
-    }
-    apply(convo) {
-        return __awaiter(this, void 0, void 0, function* () {
+            let schema = yield this.fetchSchema();
             let re = new RegExp(`^(select ((.+) from )?)?([\\w\\s-_]+)(\\(([^\\(\\)]+)\\))?$`, "i");
-            const matches = this.message.text.match(re);
+            const matches = message.text.match(re);
             const _queryName = matches[4];
             let _fields = (matches[3] || "").split(",").filter(x => x);
             const queryName = inflection.camelize(_queryName.replace(/\s/g, "_"), true);
-            let query = this.schema.getTypeMap().Query;
-            let mutation = this.schema.getTypeMap().Mutation;
+            let query = schema.getTypeMap().Query;
+            let mutation = schema.getTypeMap().Mutation;
             let field = query.getFields()[queryName];
             let type = "query";
             if (!query.getFields()[queryName]) {
@@ -98,7 +90,7 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
                 type = "mutation";
             }
             if (!field) {
-                return `\`${queryName}\` not found`;
+                return convo.say({ text: `\`${queryName}\` not found`, action: "stop" });
             }
             let namedType = graphql_1.getNamedType(field.type);
             if (_fields.length === 0 && namedType instanceof graphql_1.GraphQLObjectType) {
@@ -106,15 +98,22 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             }
             let args = null;
             try {
-                args = yield this.getArguments(convo, field.args, type);
+                args = yield this.getArguments(message, convo, field.args, type);
             }
             catch (err) {
-                return new GraphQLTopicInteractionResponse(`${err.message}`);
+                return convo.say({ text: `${err.message}`, action: "stop" });
             }
-            let q = this.buildQuery(queryName, namedType, args, _fields);
-            let result = yield this.sendQuery(`${type} ${q.toString()}`);
-            let resultYaml = js_yaml_1.safeDump((result.data && result.data[queryName]) || result);
-            return new GraphQLTopicInteractionResponse(`result: \`\`\`${resultYaml}\`\`\``);
+            return new Promise((resolve, reject) => {
+                convo.beforeThread("response", (convo, next) => __awaiter(this, void 0, void 0, function* () {
+                    let q = this.buildQuery(queryName, namedType, args, _fields);
+                    let result = yield this.sendQuery(`${type} ${q.toString()}`);
+                    let resultYaml = js_yaml_1.safeDump((result.data && result.data[queryName]) || result);
+                    convo.addMessage(`result: \`\`\`${resultYaml}\`\`\``, "response");
+                    next(null);
+                    resolve(null);
+                }));
+                convo.gotoThread("response");
+            });
         });
     }
     sendQuery(query) {
@@ -140,7 +139,7 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
         }
         return fields;
     }
-    getArguments(convo, args, type, params = null) {
+    getArguments(message, convo, args, type, params = null) {
         return __awaiter(this, void 0, void 0, function* () {
             // let params: Any = null;
             // try {
@@ -149,7 +148,7 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             let _params = {};
             if (params === null) {
                 for (let arg of args) {
-                    let value = yield this.askForField(convo, arg, "");
+                    let value = yield this.askForField(message, convo, arg, "");
                     if (value) {
                         _params[arg.name] = value;
                     }
@@ -158,12 +157,12 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             return _params;
         });
     }
-    askForField(convo, field, parentName) {
+    askForField(message, convo, field, parentName) {
         return __awaiter(this, void 0, void 0, function* () {
             //   https://api.slack.com/docs/interactive-message-field-guide
             let type = graphql_1.getNamedType(field.type);
             if (type instanceof graphql_1.GraphQLScalarType || type instanceof graphql_1.GraphQLEnumType) {
-                return yield this.askForScalarType(convo, type, `${parentName}${field.name}`, `${field.description}`);
+                return yield this.askForScalarType(message, convo, type, `${parentName}${field.name}`, `${field.description}`);
             }
             else if (type instanceof graphql_1.GraphQLObjectType ||
                 type instanceof graphql_1.GraphQLInputObjectType) {
@@ -172,16 +171,16 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
                 for (let key in fields) {
                     // key = key as string
                     let subfield = fields[key];
-                    values[key] = yield this.askForField(convo, subfield, `${parentName}${field.name}.`);
+                    values[key] = yield this.askForField(message, convo, subfield, `${parentName}${field.name}.`);
                 }
                 return values;
             }
         });
     }
-    askForScalarType(convo, type, name, description = null) {
+    askForScalarType(message, convo, type, name, description = null) {
         return __awaiter(this, void 0, void 0, function* () {
             if (name == "access_token") {
-                return this.getAccessToken(convo);
+                return this.getAccessToken(message, convo);
             }
             let descriptionArray = [];
             if (description) {
@@ -199,33 +198,32 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             }
             return new Promise((resolve, reject) => {
                 convo.ask(`Please provide value ${name} (${descriptionArray.join(";")}):`, (response, convo) => {
-                    convo.next();
                     if (response.text === ":q") {
                         reject(new Error("Ok, let's start over."));
                     }
                     else {
                         resolve(type.parseValue(response.text));
                     }
+                    convo.next();
                 });
             });
         });
     }
-    getAccessToken(convo) {
+    getAccessToken(message, convo) {
         return __awaiter(this, void 0, void 0, function* () {
-            let cachedToken = yield accessTokenCache.getItem(this.message.user);
+            let cachedToken = yield accessTokenCache.getItem(message.user);
             if (cachedToken)
                 return cachedToken;
             return new Promise((resolve, reject) => {
                 let redirectUrl = AuthServer_1.sharedServer.getRedirectUrl();
                 convo.beforeThread("access_token", (convo, next) => __awaiter(this, void 0, void 0, function* () {
                     let token = yield AuthServer_1.sharedServer.waitForToken(redirectUrl);
-                    yield accessTokenCache.setItem(this.message.user, token, {
+                    yield accessTokenCache.setItem(message.user, token, {
                         ttl: 60 * 10
                     });
                     resolve(token);
                     next(null);
                 }));
-                convo.addMessage("Got it! I'll store the token for 10 minutes. So let's continue...", "access_token");
                 convo.say({
                     text: `Access token is required for this action, please follow this link:\n ${redirectUrl}`,
                     action: "access_token"
@@ -239,4 +237,5 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
         return q;
     }
 }
+exports.GraphqlTopic = GraphqlTopic;
 //# sourceMappingURL=GraphQLTopic.js.map

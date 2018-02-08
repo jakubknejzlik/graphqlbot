@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const inflection = require("inflection");
-const TopicInteraction_1 = require("./TopicInteraction");
 class Topic {
     constructor(name, description) {
         this.name = name;
@@ -41,9 +40,9 @@ class Topic {
             return null;
         });
     }
-    getInteractionForMessage(message) {
+    startInteraction(message, convo) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new TopicInteraction_1.TopicInteraction({ text: `Not implemented` });
+            convo.say({ text: `Not implemented` });
         });
     }
 }

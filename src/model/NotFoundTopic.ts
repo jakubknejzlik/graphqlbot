@@ -1,6 +1,5 @@
 import { Topic } from "./Topic";
-import { TopicInteraction } from "./TopicInteraction";
-import { Message } from "botkit";
+import { Message, Conversation } from "botkit";
 
 export class NotFoundTopic extends Topic {
   constructor() {
@@ -11,11 +10,11 @@ export class NotFoundTopic extends Topic {
     return [".*"];
   }
 
-  public async getInteractionForMessage(
-    message: Message
-  ): Promise<TopicInteraction> {
-    return new TopicInteraction(
-      message,
+  public async startInteraction(
+    message: Message,
+    convo: Conversation<Message>
+  ): Promise<void> {
+    convo.say(
       `I don't understand this, sorry. You can always write \`help\` for getting list of available actions.`
     );
   }

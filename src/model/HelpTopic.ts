@@ -1,8 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import { Topic } from "./Topic";
-import { TopicInteraction } from "./TopicInteraction";
-import { Message } from "botkit";
+import { Message, Conversation } from "botkit";
 
 let helpText = fs.readFileSync(path.join(__dirname, "../../HELP.md"));
 
@@ -14,16 +13,15 @@ export class HelpTopic extends Topic {
     this.topics = topics;
   }
 
-  public async getInteractionForMessage(
-    message: Message
-  ): Promise<TopicInteraction> {
+  public async startInteraction(
+    message: Message,
+    convo: Conversation<Message>
+  ): Promise<void> {
     let commands: string[] = [];
     for (let topic of this.topics) {
       commands = commands.concat(await topic.getCommands());
     }
-
-    return new TopicInteraction(
-      message,
+    convo.say(
       `Available actions: \`\`\`${commands.join(
         "\n"
       )}\`\`\` *Help:* \n${helpText}`

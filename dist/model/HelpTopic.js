@@ -11,20 +11,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const fs = require("fs");
 const Topic_1 = require("./Topic");
-const TopicInteraction_1 = require("./TopicInteraction");
 let helpText = fs.readFileSync(path.join(__dirname, "../../HELP.md"));
 class HelpTopic extends Topic_1.Topic {
     constructor(topics) {
         super("Help", "");
         this.topics = topics;
     }
-    getInteractionForMessage(message) {
+    startInteraction(message, convo) {
         return __awaiter(this, void 0, void 0, function* () {
             let commands = [];
             for (let topic of this.topics) {
                 commands = commands.concat(yield topic.getCommands());
             }
-            return new TopicInteraction_1.TopicInteraction(message, `Available actions: \`\`\`${commands.join("\n")}\`\`\` *Help:* \n${helpText}`);
+            convo.say(`Available actions: \`\`\`${commands.join("\n")}\`\`\` *Help:* \n${helpText}`);
         });
     }
 }

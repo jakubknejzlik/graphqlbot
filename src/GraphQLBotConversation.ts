@@ -17,25 +17,12 @@ export class GraphQLBotConversation<S, M extends Message> {
 
     try {
       const topic = await this.resolver.getTopicForMessage(message);
-      let interaction = await topic.getInteractionForMessage(message);
-      let response = await interaction.apply(convo);
-
-      if (response !== null) {
-        convo.say(response.toString());
-      }
+      topic.startInteraction(message, convo);
     } catch (err) {
       convo.say(
         `Failed to get response \`\`\`${err.message} ${err.stack}\`\`\``
       );
     }
-
-    // let anythingElseInteraction = new TopicInteraction("Anything else?")
-    // const res = await anythingElseInteraction.apply(convo)
-    // if (res == "yes") {
-    //   convo.transitionTo("completed","Ask again")
-    // }else {
-    // convo.addMessage("Good bye!","completed")
-    // }
   }
 
   async startConversation(message: M): Promise<Conversation<M>> {

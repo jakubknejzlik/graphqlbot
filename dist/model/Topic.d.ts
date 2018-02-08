@@ -1,5 +1,4 @@
-import { Message } from "botkit";
-import { TopicInteraction } from "./TopicInteraction";
+import { Message, Conversation } from "botkit";
 export declare class Topic {
     name: string;
     description: string;
@@ -8,5 +7,5 @@ export declare class Topic {
     getCallName(): string;
     getPatterns(): Promise<(string | RegExp)[]>;
     validate(message: string): Promise<RegExpMatchArray | null>;
-    getInteractionForMessage(message: Message): Promise<TopicInteraction>;
+    startInteraction(message: Message, convo: Conversation<Message>): Promise<void>;
 }
