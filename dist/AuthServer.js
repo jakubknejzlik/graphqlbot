@@ -47,8 +47,13 @@ class AuthServer {
         this.app.use((req, res, next) => {
             let state = req.query.state;
             let token = req.query.code;
-            this.handlers[state](token);
-            res.send("Authorization processed, you can now close the window.");
+            if (typeof this.handlers[state] == "function") {
+                this.handlers[state](token);
+                res.send("Authorization processed, you can now close the window.");
+            }
+            else {
+                res.send("Handler not found");
+            }
         });
     }
     getRedirectUrl() {
