@@ -4,7 +4,6 @@ import { Topic } from "./Topic";
 import { TopicInteraction } from "./TopicInteraction";
 export declare class GraphqlTopic extends Topic {
     url: string;
-    schema: GraphQLSchema | null;
     constructor(url: string);
     fetchSchema(): Promise<GraphQLSchema>;
     getCommands(): Promise<string[]>;

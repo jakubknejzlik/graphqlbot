@@ -30,18 +30,11 @@ import { sharedServer } from "../AuthServer";
 
 const postAsync = bluebird.promisify(request.post);
 
-// const graphql = require("graphql");
-// const Query = require("graphql-query-builder");
-// const yaml = require("js-yaml");
-
-// const Topic = require("./topic");
-// const GraphqlConversation = require("../graphql-conversation");
-
 const accessTokenCache = new ExpirationStrategy(new MemoryStorage());
+const schemaCache = new ExpirationStrategy(new MemoryStorage());
 
 export class GraphqlTopic extends Topic {
   url: string;
-  schema: GraphQLSchema | null = null;
 
   constructor(url: string) {
     super("GraphQL", "...");
@@ -49,8 +42,9 @@ export class GraphqlTopic extends Topic {
   }
 
   async fetchSchema(): Promise<GraphQLSchema> {
-    if (this.schema !== null) {
-      return this.schema;
+    let schema = await schemaCache.getItem<GraphQLSchema>("schema");
+    if (schema) {
+      return schema;
     }
     let response = await postAsync({
       url: this.url,
@@ -59,8 +53,9 @@ export class GraphqlTopic extends Topic {
       }
     });
 
-    this.schema = buildClientSchema(response.body.data);
-    return this.schema;
+    schema = buildClientSchema(response.body.data);
+    schemaCache.setItem("schema", schema, { ttl: 60 });
+    return schema;
   }
 
   async getCommands(): Promise<string[]> {

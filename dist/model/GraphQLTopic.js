@@ -21,22 +21,18 @@ const Topic_1 = require("./Topic");
 const TopicInteraction_1 = require("./TopicInteraction");
 const AuthServer_1 = require("../AuthServer");
 const postAsync = bluebird.promisify(request.post);
-// const graphql = require("graphql");
-// const Query = require("graphql-query-builder");
-// const yaml = require("js-yaml");
-// const Topic = require("./topic");
-// const GraphqlConversation = require("../graphql-conversation");
 const accessTokenCache = new node_ts_cache_1.ExpirationStrategy(new node_ts_cache_1.MemoryStorage());
+const schemaCache = new node_ts_cache_1.ExpirationStrategy(new node_ts_cache_1.MemoryStorage());
 class GraphqlTopic extends Topic_1.Topic {
     constructor(url) {
         super("GraphQL", "...");
-        this.schema = null;
         this.url = url;
     }
     fetchSchema() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.schema !== null) {
-                return this.schema;
+            let schema = yield schemaCache.getItem("schema");
+            if (schema) {
+                return schema;
             }
             let response = yield postAsync({
                 url: this.url,
@@ -44,8 +40,9 @@ class GraphqlTopic extends Topic_1.Topic {
                     query: graphql_1.introspectionQuery
                 }
             });
-            this.schema = buildClientSchema_1.buildClientSchema(response.body.data);
-            return this.schema;
+            schema = buildClientSchema_1.buildClientSchema(response.body.data);
+            schemaCache.setItem("schema", schema, { ttl: 60 });
+            return schema;
         });
     }
     getCommands() {
