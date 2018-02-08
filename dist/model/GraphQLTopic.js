@@ -224,6 +224,8 @@ class GraphqlTopic extends Topic_1.Topic {
                     resolve(token);
                     next(null);
                 }));
+                // this has to be present so the access_token thread has content (event it's not displaying the message right now :( )
+                convo.addMessage(`Got it! I'll store the token for 10 minutes. So let's continue...`, "access_token");
                 convo.say({
                     text: `Access token is required for this action, please follow this link:\n ${redirectUrl}`,
                     action: "access_token"

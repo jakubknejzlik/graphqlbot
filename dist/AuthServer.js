@@ -47,22 +47,25 @@ class AuthServer {
         this.app.use((req, res, next) => {
             let state = req.query.state;
             let code = req.query.code;
-            if (typeof this.handlers[state] == "function") {
+            let handler = this.handlers[state];
+            if (typeof handler == "function") {
+                delete this.handlers[state];
                 const tokenConfig = {
                     code: code,
                     redirect_uri: OAUTH_REDIRECT_URL
                 };
                 this.oauth2.authorizationCode.getToken(tokenConfig, (error, result) => {
                     if (error) {
-                        return this.handlers[state](error, null);
+                        return handler(error, null);
                     }
                     const access = this.oauth2.accessToken.create(result);
-                    this.handlers[state](null, result.access_token);
+                    handler(null, result.access_token);
                     res.send("Authorization processed, you can now close the window.");
                 });
             }
             else {
-                res.send("Handler not found");
+                console.log(Object.keys(this.handlers));
+                res.send(`Handler not found for state ${state}`);
             }
         });
     }
