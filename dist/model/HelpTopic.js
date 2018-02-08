@@ -8,8 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const path = require("path");
+const fs = require("fs");
 const Topic_1 = require("./Topic");
 const TopicInteraction_1 = require("./TopicInteraction");
+let helpText = fs.readFileSync(path.join(__dirname, "../../HELP.md"));
 class HelpTopic extends Topic_1.Topic {
     constructor(topics) {
         super("Help", "");
@@ -21,7 +24,7 @@ class HelpTopic extends Topic_1.Topic {
             for (let topic of this.topics) {
                 commands = commands.concat(yield topic.getCommands());
             }
-            return new TopicInteraction_1.TopicInteraction(message.text, `You can call these functions: \`\`\`${commands.join("\n")}\`\`\``);
+            return new TopicInteraction_1.TopicInteraction(message.text, `Available actions: \`\`\`${commands.join("\n")}\`\`\` *Help:* \n${helpText}`);
         });
     }
 }

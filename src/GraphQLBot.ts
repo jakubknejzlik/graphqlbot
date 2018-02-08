@@ -1,19 +1,18 @@
-import { Bot, Controller } from 'botkit';
+import { Bot, Controller } from "botkit";
 
-import { GraphQLBotConversation } from './GraphQLBotConversation';
-import { GraphqlTopic } from './model/GraphQLTopic';
-import { TopicResolver } from './TopicResolver';
+import { GraphQLBotConversation } from "./GraphQLBotConversation";
+import { GraphqlTopic } from "./model/GraphQLTopic";
+import { TopicResolver } from "./TopicResolver";
 
 // const Conversation = require("./Conversation");
 // const GraphqlClient = require("./graphql-client");
 
 // const { NotFoundTopic, HelpTopic } = require("./model");
 
-export class GraphQLBot<S,M> {
+export class GraphQLBot<S, M> {
+  controller: Controller<S, M, Bot<S, M>>;
 
-  controller: Controller<S,M,Bot<S,M>>
-
-  constructor(controller: Controller<S,M,Bot<S,M>>) {
+  constructor(controller: Controller<S, M, Bot<S, M>>) {
     this.controller = controller;
   }
 
@@ -36,11 +35,11 @@ export class GraphQLBot<S,M> {
 
     this.controller.hears(
       [".*"],
-      ['direct_message','direct_mention'],
+      ["direct_message", "direct_mention"],
       async (bot, message) => {
         try {
-          const resolver = new TopicResolver([new GraphqlTopic(url)])
-          const conversation = new GraphQLBotConversation<S,M>(bot, resolver);
+          const resolver = new TopicResolver([new GraphqlTopic(url)]);
+          const conversation = new GraphQLBotConversation<S, M>(bot, resolver);
           conversation.start(message);
         } catch (e) {
           console.log(e);
@@ -51,4 +50,3 @@ export class GraphQLBot<S,M> {
     return true;
   }
 }
-

@@ -20,7 +20,8 @@ class TopicResolver {
     getTopicForMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
             for (let topic of this.topics) {
-                if (typeof message.text !== 'undefined' && (yield topic.validate(message.text))) {
+                if (typeof message.text !== "undefined" &&
+                    (yield topic.validate(message.text))) {
                     return topic;
                 }
             }

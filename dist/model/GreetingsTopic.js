@@ -16,12 +16,12 @@ class GreetingsTopic extends Topic_1.Topic {
     }
     getPatterns() {
         return __awaiter(this, void 0, void 0, function* () {
-            return ["hi", "hello", "ciao"];
+            return ["hi", "hello", "ciao", "greetings"];
         });
     }
     getInteractionForMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new TopicInteraction_1.TopicInteraction(`Hello!`);
+            return new TopicInteraction_1.TopicInteraction(message.text, `Hello!`);
         });
     }
 }

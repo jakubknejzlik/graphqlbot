@@ -1,6 +1,7 @@
 const Botkit = require("botkit");
 
 const GraphQLBot = require("./dist/GraphQLBot");
+const sharedServer = require("./dist/AuthServer").sharedServer;
 
 const GRAPHQL_URL = process.env.GRAPHQL_URL;
 
@@ -22,3 +23,6 @@ const start = async (url, token) => {
 };
 
 start(GRAPHQL_URL);
+
+const port = process.env.PORT || 3000;
+sharedServer.start(port);

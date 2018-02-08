@@ -1,5 +1,5 @@
-import { Message } from 'botkit';
-import { TopicInteraction } from './TopicInteraction';
+import { Message } from "botkit";
+import { TopicInteraction } from "./TopicInteraction";
 export declare class Topic {
     name: string;
     description: string;

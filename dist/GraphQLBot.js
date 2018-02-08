@@ -32,7 +32,7 @@ class GraphQLBot {
             // this.controller.hears(['attach'],['direct_message'],function(bot,message) {
             //   console.log('file',message)
             // })
-            this.controller.hears([".*"], ['direct_message', 'direct_mention'], (bot, message) => __awaiter(this, void 0, void 0, function* () {
+            this.controller.hears([".*"], ["direct_message", "direct_mention"], (bot, message) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     const resolver = new TopicResolver_1.TopicResolver([new GraphQLTopic_1.GraphqlTopic(url)]);
                     const conversation = new GraphQLBotConversation_1.GraphQLBotConversation(bot, resolver);

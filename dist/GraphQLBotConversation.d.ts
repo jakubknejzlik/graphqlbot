@@ -1,5 +1,5 @@
-import { Bot, Conversation, Message } from 'botkit';
-import { TopicResolver } from './TopicResolver';
+import { Bot, Conversation, Message } from "botkit";
+import { TopicResolver } from "./TopicResolver";
 export declare class GraphQLBotConversation<S, M extends Message> {
     bot: Bot<S, M>;
     resolver: TopicResolver;

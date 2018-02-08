@@ -103,7 +103,11 @@ export class GraphQlQuery {
     } else if (this.isWithoutBody) {
       return `{ ${this.buildHeader()} }`;
     } else {
-      return `{ ${this.buildHeader()}{${this.buildBody()}} }`;
+      let body = this.buildBody();
+      if (body !== "") {
+        body = `{${body}}`;
+      }
+      return `{ ${this.buildHeader()}${body} }`;
     }
   }
 

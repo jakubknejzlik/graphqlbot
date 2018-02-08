@@ -15,15 +15,18 @@ const buildClientSchema_1 = require("graphql/utilities/buildClientSchema");
 const inflection = require("inflection");
 const js_yaml_1 = require("js-yaml");
 const request = require("request");
+const node_ts_cache_1 = require("node-ts-cache");
 const GraphQLQuery_1 = require("../GraphQLQuery");
 const Topic_1 = require("./Topic");
 const TopicInteraction_1 = require("./TopicInteraction");
+const AuthServer_1 = require("../AuthServer");
 const postAsync = bluebird.promisify(request.post);
 // const graphql = require("graphql");
 // const Query = require("graphql-query-builder");
 // const yaml = require("js-yaml");
 // const Topic = require("./topic");
 // const GraphqlConversation = require("../graphql-conversation");
+const accessTokenCache = new node_ts_cache_1.ExpirationStrategy(new node_ts_cache_1.MemoryStorage());
 class GraphqlTopic extends Topic_1.Topic {
     constructor(url) {
         super("GraphQL", "...");
@@ -69,7 +72,7 @@ class GraphqlTopic extends Topic_1.Topic {
     }
     getInteractionForMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new GraphqlTopicInteraction(message.text, yield this.fetchSchema(), this.url);
+            return new GraphqlTopicInteraction(message, yield this.fetchSchema(), this.url);
         });
     }
 }
@@ -85,17 +88,17 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
     apply(convo) {
         return __awaiter(this, void 0, void 0, function* () {
             let re = new RegExp(`^(select ((.+) from )?)?([\\w\\s-_]+)(\\(([^\\(\\)]+)\\))?$`, "i");
-            const matches = this.message.match(re);
+            const matches = this.message.text.match(re);
             const _queryName = matches[4];
-            let _fields = (matches[3] || "").split(',').filter(x => x);
-            const queryName = inflection.camelize(_queryName.replace(/\s/g, '_'), true);
+            let _fields = (matches[3] || "").split(",").filter(x => x);
+            const queryName = inflection.camelize(_queryName.replace(/\s/g, "_"), true);
             let query = this.schema.getTypeMap().Query;
             let mutation = this.schema.getTypeMap().Mutation;
             let field = query.getFields()[queryName];
-            let type = 'query';
+            let type = "query";
             if (!query.getFields()[queryName]) {
                 field = mutation.getFields()[queryName];
-                type = 'mutation';
+                type = "mutation";
             }
             if (!field) {
                 return `\`${queryName}\` not found`;
@@ -104,10 +107,16 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             if (_fields.length === 0 && namedType instanceof graphql_1.GraphQLObjectType) {
                 _fields = this.getScalarFields(namedType);
             }
-            let args = yield this.getArguments(convo, field.args, type);
+            let args = null;
+            try {
+                args = yield this.getArguments(convo, field.args, type);
+            }
+            catch (err) {
+                return new GraphQLTopicInteractionResponse(`${err.message}`);
+            }
             let q = this.buildQuery(queryName, namedType, args, _fields);
             let result = yield this.sendQuery(`${type} ${q.toString()}`);
-            let resultYaml = js_yaml_1.safeDump(result);
+            let resultYaml = js_yaml_1.safeDump(result.data[queryName] ? result.data[queryName] : result);
             return new GraphQLTopicInteractionResponse(`result: \`\`\`${resultYaml}\`\`\``);
         });
     }
@@ -141,7 +150,7 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
             //   params = message.match[6] && eval(`params = {${message.match[6]}}`);
             // } catch (e) {}
             let _params = {};
-            if (params === null && type == 'mutation') {
+            if (params === null) {
                 for (let arg of args) {
                     let value = yield this.askForField(convo, arg, "");
                     if (value) {
@@ -174,21 +183,55 @@ class GraphqlTopicInteraction extends TopicInteraction_1.TopicInteraction {
     }
     askForScalarType(convo, type, name, description = null) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (name == "access_token") {
+                return this.getAccessToken(convo);
+            }
             let descriptionArray = [];
             if (description) {
                 descriptionArray.push(description);
             }
             if (type instanceof graphql_1.GraphQLEnumType) {
-                let possibleValues = type.getValues().map(x => `${x.name}=>${x.value}`).join(', ');
+                let possibleValues = type
+                    .getValues()
+                    .map(x => `${x.name}=>${x.value}`)
+                    .join(", ");
                 descriptionArray.push(`possible values: ${possibleValues}`);
             }
             else if (type === scalars_1.GraphQLBoolean) {
                 descriptionArray.push(`possible values: true/false`);
             }
             return new Promise((resolve, reject) => {
-                convo.ask(`Please provide value ${name} (${descriptionArray.join(';')}):`, (response, convo) => {
+                convo.ask(`Please provide value ${name} (${descriptionArray.join(";")}):`, (response, convo) => {
                     convo.next();
-                    resolve(type.parseValue(response.text));
+                    if (response.text === ":q") {
+                        reject(new Error("Ok, let's start over."));
+                    }
+                    else {
+                        resolve(type.parseValue(response.text));
+                    }
+                });
+            });
+        });
+    }
+    getAccessToken(convo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let cachedToken = yield accessTokenCache.getItem(this.message.user);
+            if (cachedToken)
+                return cachedToken;
+            return new Promise((resolve, reject) => {
+                let redirectUrl = AuthServer_1.sharedServer.getRedirectUrl();
+                convo.beforeThread("access_token", (convo, next) => __awaiter(this, void 0, void 0, function* () {
+                    let token = yield AuthServer_1.sharedServer.waitForToken(redirectUrl);
+                    yield accessTokenCache.setItem(this.message.user, token, {
+                        ttl: 60 * 10
+                    });
+                    resolve(token);
+                    next(null);
+                }));
+                convo.addMessage("Got it! I'll store the token for 10 minutes. So let's continue...", "access_token");
+                convo.say({
+                    text: `Access token is required for this action, please follow this link:\n ${redirectUrl}`,
+                    action: "access_token"
                 });
             });
         });

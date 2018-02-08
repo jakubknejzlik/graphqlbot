@@ -48,8 +48,7 @@ class GraphQLBotConversation {
         });
     }
     processMessage(message) {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
+        return __awaiter(this, void 0, void 0, function* () { });
     }
 }
 exports.GraphQLBotConversation = GraphQLBotConversation;

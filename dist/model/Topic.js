@@ -32,7 +32,7 @@ class Topic {
         return __awaiter(this, void 0, void 0, function* () {
             const patterns = yield this.getPatterns();
             for (let pattern of patterns) {
-                console.log(`validate?? ${pattern} => ${message}`);
+                // console.log(`validate?? ${pattern} => ${message}`);
                 const match = message.match(pattern);
                 if (match !== null) {
                     return match;

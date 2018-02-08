@@ -1,45 +1,48 @@
-import * as inflection from 'inflection'
-import { Message, Conversation } from 'botkit';
+import * as inflection from "inflection";
+import { Message, Conversation } from "botkit";
 
 export class TopicInteraction {
-  message: string
-  response?: string
+  message: Message;
+  response?: string;
 
-  constructor(message: string, response?: string) {
-    this.message = message
-    this.response = response
+  constructor(message: Message, response?: string) {
+    this.message = message;
+    this.response = response;
   }
 
-  async apply(convo: Conversation<Message>): Promise<TopicInteractionResponse | null> {
-    return new TopicInteractionResponse(this.response || "empty interaction")
+  async apply(
+    convo: Conversation<Message>
+  ): Promise<TopicInteractionResponse | null> {
+    return new TopicInteractionResponse(this.response || "empty interaction");
   }
 }
 
-export class TopicInteractionResponse extends String {
-}
+export class TopicInteractionResponse extends String {}
 
 export class TopicInteractionQuestion extends TopicInteraction {
-  async apply(convo: Conversation<Message>): Promise<TopicInteractionResponse | null> {
+  async apply(
+    convo: Conversation<Message>
+  ): Promise<TopicInteractionResponse | null> {
     return new Promise<TopicInteractionResponse | null>((resolve, reject) => {
-      convo.ask(this.message,(response_message,convo) => {
-        const text = response_message.text
-        if (typeof text === 'undefined') {
-          reject(new Error('empty response'))
+      convo.ask(this.message, (response_message, convo) => {
+        const text = response_message.text;
+        if (typeof text === "undefined") {
+          reject(new Error("empty response"));
         }
-        resolve(new TopicInteractionQuestionResponse(text as string))
-      })
-    })
+        resolve(new TopicInteractionQuestionResponse(text as string));
+      });
+    });
   }
 }
 
 export class TopicInteractionQuestionResponse extends TopicInteractionResponse {
-  text: string  
+  text: string;
   constructor(text: string) {
-    super()
-    this.text = text
+    super();
+    this.text = text;
   }
 
   toString(): string {
-    return this.text
+    return this.text;
   }
 }

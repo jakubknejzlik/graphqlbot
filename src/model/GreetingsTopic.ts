@@ -8,10 +8,12 @@ export class GreetingsTopic extends Topic {
   }
 
   async getPatterns(): Promise<(string | RegExp)[]> {
-    return ["hi","hello","ciao"]
+    return ["hi", "hello", "ciao", "greetings"];
   }
 
-  public async getInteractionForMessage(message: Message): Promise<TopicInteraction> {
-    return new TopicInteraction(`Hello!`)
+  public async getInteractionForMessage(
+    message: Message
+  ): Promise<TopicInteraction> {
+    return new TopicInteraction(message.text, `Hello!`);
   }
 }

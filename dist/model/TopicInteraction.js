@@ -29,8 +29,8 @@ class TopicInteractionQuestion extends TopicInteraction {
             return new Promise((resolve, reject) => {
                 convo.ask(this.message, (response_message, convo) => {
                     const text = response_message.text;
-                    if (typeof text === 'undefined') {
-                        reject(new Error('empty response'));
+                    if (typeof text === "undefined") {
+                        reject(new Error("empty response"));
                     }
                     resolve(new TopicInteractionQuestionResponse(text));
                 });

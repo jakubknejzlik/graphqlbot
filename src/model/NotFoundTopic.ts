@@ -1,5 +1,5 @@
 import { Topic } from "./Topic";
-import { TopicInteraction } from "./TopicInteraction"
+import { TopicInteraction } from "./TopicInteraction";
 import { Message } from "botkit";
 
 export class NotFoundTopic extends Topic {
@@ -11,7 +11,12 @@ export class NotFoundTopic extends Topic {
     return [".*"];
   }
 
-  public async getInteractionForMessage(message: Message): Promise<TopicInteraction> {
-    return new TopicInteraction(`I don't understand this, sorry`)
+  public async getInteractionForMessage(
+    message: Message
+  ): Promise<TopicInteraction> {
+    return new TopicInteraction(
+      message.text,
+      `I don't understand this, sorry. You can always write \`help\` for getting list of available actions.`
+    );
   }
 }

@@ -1,8 +1,8 @@
-import { Message, Conversation } from 'botkit';
+import { Message, Conversation } from "botkit";
 export declare class TopicInteraction {
-    message: string;
+    message: Message;
     response?: string;
-    constructor(message: string, response?: string);
+    constructor(message: Message, response?: string);
     apply(convo: Conversation<Message>): Promise<TopicInteractionResponse | null>;
 }
 export declare class TopicInteractionResponse extends String {
